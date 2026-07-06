@@ -39,4 +39,5 @@ This document defines the strict vocabulary for the Foundry project. Every promp
 - **Ghost Node:** A defensive database stub created when an edge targets an unextracted ID.
 - **Progressive Disclosure:** Loading schemas and instructions into the LLM's context window _only_ when a specific skill is triggered, preventing context collapse.
 - **State Isolation (`.skills-data/`):** The architectural rule that skills are immutable definitions (`.forge/skills/`), and all generated artifacts are written to a strictly separated runtime directory.
+- **Pipeline Ledger:** The deterministic, machine-readable record in `.skills-data/pipeline/` of every node's lifecycle state and transition history. It is the sole sequencing authority: bundled mutation scripts consult its preconditions before executing and refuse out-of-order phase transitions.
 - **Model Context Protocol (MCP):** A standardized client-server architecture used to grant Tier 1 agents read-only access to external graph/vector databases (e.g., Neo4j, Qdrant).
