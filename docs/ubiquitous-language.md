@@ -17,9 +17,9 @@ This document defines the strict vocabulary for the Foundry project. Every promp
 
 ## Actors (Roles)
 
-- **Forge:** The system orchestrator. It manages state, executes the pipeline, and enforces schema contracts, but possesses zero domain intelligence or business logic.
-- **Tier 1 Agent:** A read-only Forge agent (`tools: [read, sem_search]`). Literally lacks the capability to mutate files or execute shell commands. Used for planning and review.
-- **Tier 2 Agent:** A script-executing Forge agent (`tools: [read, shell]`). Lacks native file mutation tools but can invoke verified bundled scripts.
+- **ForgeCode:** The agent harness (the `forge` CLI) hosting all LLM roles as project-scoped agents. It supplies the runtime — tool scoping, per-role model routing, skills, MCP — but has zero domain intelligence and does not sequence the pipeline (ADR 016). In earlier documents, "Forge" referred to a single orchestrator; its responsibilities are now split between ForgeCode (agent runtime) and the Pipeline Ledger with its transition scripts (sequencing and schema enforcement, ADR 017).
+- **Tier 1 Agent:** A read-only ForgeCode agent (`tools: [read, search]` plus narrowly-scoped read-only MCP tools). Literally lacks the capability to mutate files or execute shell commands. Used for planning and review.
+- **Tier 2 Agent:** A script-executing ForgeCode agent (`tools: [read, shell]`). Lacks native file mutation tools but can invoke verified bundled scripts.
 - **Extractor:** The deterministic tool (e.g., Marker, Docling) that converts Source Material to Extracted Text.
 - **Discoverer:** The LLM role that identifies and classifies topics from Extracted Text without summarizing them.
 - **Author:** The LLM role that synthesizes Topic Metadata into a Knowledge Draft.
