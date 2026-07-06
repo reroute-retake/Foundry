@@ -22,14 +22,28 @@ _TYPOGRAPHIC_FOLD = str.maketrans({
     "–": "-", "—": "-", "−": "-",
 })
 
+# Markdown link syntax: [text](url) -> text.
+_MARKDOWN_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+# Markdown emphasis/code markers LLMs strip when quoting: * _ ` ~ .
+# '#' is deliberately NOT stripped: folding it would silently equate
+# "C#" with "C" and "issue #42" with "issue 42" — semantic erasure.
+_MARKDOWN_MARKS = re.compile(r"[*_`~]")
+
 
 def normalize_quote(text: str) -> str:
-    """Canonical normalization for evidence-quote comparison (decision register #36).
+    """Canonical normalization for evidence-quote comparison (register #36, #43).
 
     Conservative by design: NFKC (handles ellipses, ligatures, fullwidth forms,
-    non-breaking spaces), typographic quote/dash folding, and whitespace-run
-    collapsing. It deliberately does NOT strip punctuation wholesale — aggressive
-    normalization creates false-positive matches on short quotes.
+    non-breaking spaces), typographic quote/dash folding, markdown folding
+    (emphasis/code markers stripped, links unwrapped to their text), and
+    whitespace-run collapsing. It deliberately does NOT strip punctuation
+    wholesale — aggressive normalization creates false-positive matches on
+    short quotes.
+
+    Markdown folding is REQUIRED, not optional: the source chunk is Extracted
+    Markdown, LLMs strip formatting when quoting, and the recovered SOURCE span
+    (with markdown) must normalized-match the LLM's quote (without it) for the
+    TopicMetadata validator to accept the handoff.
 
     This function is the single source of truth: the schema validator below and the
     Discoverer script's chunk-matching pass MUST both use it, so the check and the
@@ -38,8 +52,10 @@ def normalize_quote(text: str) -> str:
     this conservative equivalence — a quote too mangled to pass is weak grounding
     and should trigger an LLM retry, not a workaround.
     """
-    folded = unicodedata.normalize("NFKC", text).translate(_TYPOGRAPHIC_FOLD)
-    return re.sub(r"\s+", " ", folded).strip()
+    unlinked = _MARKDOWN_LINK.sub(r"\1", text)
+    folded = unicodedata.normalize("NFKC", unlinked).translate(_TYPOGRAPHIC_FOLD)
+    stripped = _MARKDOWN_MARKS.sub("", folded)
+    return re.sub(r"\s+", " ", stripped).strip()
 
 
 class EvaluationStep(BaseModel):

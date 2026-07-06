@@ -52,9 +52,17 @@ New top-level `core/` directory (same bare-module convention as `schemas/`;
 | Module | Responsibility |
 | --- | --- |
 | `core/canonical_json.py` | Pinned deterministic serialization (sorted keys, UTF-8, `\n`, fixed separators) + sha256 helpers — hashes must be reproducible or the immutability witness is worthless |
-| `core/workspace.py` | Repo-root/`.skills-data/` path resolution (ADR 013), atomic write (temp + rename), flock context manager |
+| `core/workspace.py` | Repo-root/`.skills-data/` path resolution (ADR 013), atomic write (temp + rename), cross-platform lock via `filelock` — fcntl is Unix-only (register #42) |
 | `core/ledger.py` | `append_event()`, `fold()` / `rebuild_manifest()`, `validate_transition()` (state, verdict, fix-cycle, document-extracted preconditions), per-node sequence, ULID generation (pure-python, no new dependency) |
 | `core/status.py` | Per-batch ledger report (what's next / what's blocked — ADR 017's `status`) |
+
+**Take care (register #41):** the pinned serialization is exactly
+`json.dumps(obj, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":"))`,
+explicitly encoded as UTF-8 — never the platform default encoding. One function must
+produce the bytes for BOTH the file write and the sha256 (hash-what-you-write; two
+serialization paths will drift). The schemas contain no `float` fields — keep it
+that way; introducing one requires a register entry (float repr is the other classic
+canonicalization hazard).
 
 **Tests:** simulated 3-node lifecycle walk; out-of-order refusal; quarantine on cycle
 exhaustion; crash-safety (event appended, manifest stale → rebuild equals fold);
@@ -84,7 +92,9 @@ and artifacts; `status` reports the document as extracted.
    embeds the canonical order, level predicates, and axioms as minimal pairs
    (loaded from `docs/` at runtime — no duplicated copies to drift).
 3. Verify `evidence_quote` via `normalize_quote()` matching; **recover the source
-   span** and store it in `provenance.quotation_snippet` (register #36).
+   span** and store it in `provenance.quotation_snippet` (register #36; the
+   normalizer is markdown-aware per #43 — LLMs strip formatting when quoting, and
+   the recovered span carries the source's markdown).
 4. Slugify → `canonical_id`; assemble `TopicMetadata`; execute `DISCOVER`
    transitions (including `GHOST` reification when applicable).
 5. Bounded retries per chunk (2), then skip + append to a discovery-failures report —
@@ -110,6 +120,14 @@ classification spot-check by the Operator looks sane.
   assembles `canonical_id` and `provenance` from TopicMetadata (emit-language
   principle again).
 - Edges must be empty at DRAFT (Pass 1 — ADR 008); script rejects otherwise.
+
+**Take care (register #44):** never strip fields from the committed models at
+runtime. The LLM-facing request schemas are separate, per-kind models containing
+only the fields above — `edges` and `provenance` are excluded by construction, the
+provider grammar stays small (no Edge/SourceRef `$defs`), and the committed
+contracts are never mutated. Provider strict modes reject complex/recursive
+schemas; flat request models avoid the entire class. The same pattern applies to
+the Fixer in Phase 5.
 
 **Exit:** `DISCOVERED → DRAFTED` with schema-valid `knowledge_draft` revisions for
 the chapter's nodes.
@@ -139,8 +157,14 @@ fail → fix → re-review → pass, and one first-pass promotion.
   mode optional for interactive v1).
 - AGENTS.md: fill the verified tool ids; add the runbook pointer.
 
+**Take care (tool-id silent failure):** an unknown tool id in agent frontmatter is
+silently ignored, and a wrong string in `permissions.yaml` simply never matches —
+both fail quiet or fail open. Defense: after authoring each agent file, run
+`:tools` *inside that agent's session* and confirm the effective toolset matches
+its tier definition exactly.
+
 **Exit:** the full skeleton driven end-to-end from an interactive ForgeCode session
-using the agent definitions.
+using the agent definitions; per-agent `:tools` output matches tier definitions.
 
 ## Phase 7 — Acceptance run + retrospective
 
@@ -171,7 +195,7 @@ Phase 6 agent files can be drafted alongside Phases 3–5. The local-serving spi
 | Provider structured-output limits on complex schemas | Per-kind schema selection (Phase 4) keeps grammars small; ClassificationResult is flat |
 | Evidence-quote recovery failure rate | Bounded retries + discovery-failures report; failures are data for the eval set |
 | Chunking quality drives classification quality | v1 section-based chunking is deliberately simple; revisit with Phase 7 metrics |
-| ForgeCode tool-id mismatch in agent frontmatter | Resolved in Phase 0 before any agent file is written |
+| ForgeCode tool-id mismatch in agent frontmatter | Resolved in Phase 0 before any agent file is written; re-verified per-agent via in-session `:tools` (Phase 6) |
 | Cost of frontier gates | Skeleton is one chapter (~tens of nodes); Phase 7 captures the real number before scaling |
 
 ## Session bootstrap (read this first tomorrow)

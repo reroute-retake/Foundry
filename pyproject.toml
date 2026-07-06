@@ -11,6 +11,7 @@ classifiers = [
 ]
 dependencies = [
     "pydantic>=2.13,<3",
+    "filelock>=3",  # cross-platform ledger locking; fcntl is Unix-only (register #42)
 ]
 
 # Heavy pipeline dependencies (extractor, serving, graph) are deliberately NOT pinned

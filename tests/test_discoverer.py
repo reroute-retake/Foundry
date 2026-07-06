@@ -129,3 +129,38 @@ def test_topic_metadata_accepts_typographic_divergence() -> None:
         provenance=_provenance(quotation_snippet=source_span),
     )
     assert metadata.provenance.quotation_snippet == source_span
+
+
+def test_normalize_quote_folds_markdown_formatting() -> None:
+    """LLMs strip markdown when quoting; folding is REQUIRED for recovered-span
+    validation to pass (register #43)."""
+    assert ds.normalize_quote("The database is **fast**") == ds.normalize_quote(
+        "The database is fast"
+    )
+    assert ds.normalize_quote("the `fsync` call") == ds.normalize_quote("the fsync call")
+    assert ds.normalize_quote("_eventual_ consistency") == ds.normalize_quote(
+        "eventual consistency"
+    )
+
+
+def test_normalize_quote_unwraps_markdown_links() -> None:
+    assert ds.normalize_quote("see the [WAL](docs/wal.md) design") == ds.normalize_quote(
+        "see the WAL design"
+    )
+
+
+def test_normalize_quote_preserves_hash_semantics() -> None:
+    """'#' is deliberately NOT stripped: folding it would equate C# with C."""
+    assert ds.normalize_quote("written in C#") != ds.normalize_quote("written in C")
+
+
+def test_topic_metadata_accepts_markdown_divergence() -> None:
+    """Recovered source span carries markdown; the LLM's quote does not."""
+    source_span = "an **append-only** record sequence persisted before page writes"
+    llm_quote = "an append-only record sequence persisted before page writes"
+    metadata = ds.TopicMetadata(
+        canonical_id="write_ahead_log",
+        classification=_result(evidence_quote=llm_quote),
+        provenance=_provenance(quotation_snippet=source_span),
+    )
+    assert metadata.provenance.quotation_snippet == source_span
