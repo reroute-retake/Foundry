@@ -2,6 +2,8 @@
 
 The `Discoverer` agent relies on 6 absolute, structure-bound tie-breakers to resolve ontological collisions. These rules must be injected into the Discoverer's prompt as "minimal pairs" to calibrate the LLM's understanding without causing instruction amnesia.
 
+These axioms resolve *collisions between* levels; the positive entry criteria for each of the 10 levels are defined in `classification-predicates.md`. Each axiom is enforced at the earlier level of its pair in the canonical evaluation order.
+
 ## 1. The Structural Autonomy Rule (Data Structure vs. Pattern)
 
 - **Conflict:** Does the entity describe a layout (e.g., Distributed Hash Table)?
