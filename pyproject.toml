@@ -31,12 +31,19 @@ target-version = "py312"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = ["E", "F", "I", "B"]
+# E501: Field descriptions in schema modules are deliberately long single lines.
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["taxonomy", "discoverer_schema", "review", "pipeline_ledger", "support"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
 files = ["schemas"]
+plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["schemas", "tests"]

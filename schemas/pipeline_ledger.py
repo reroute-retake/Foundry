@@ -4,8 +4,9 @@ The ledger is the sole sequencing authority for the Foundry pipeline. Events are
 canonical and append-only (ledger.jsonl); the manifest is a derived, rebuildable
 snapshot (manifest.json). See docs/pipeline-ledger.md.
 """
-from typing import Dict, List, Literal, Optional, Union, Annotated
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Annotated, Dict, List, Literal, Optional, Union
+
+from pydantic import BaseModel, ConfigDict, Field
 
 # ==========================================
 # Core Vocabulary

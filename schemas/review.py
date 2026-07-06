@@ -10,7 +10,8 @@ call (docs/pipeline-ledger.md §3), validated against this schema, and persisted
 The Reviewer critiques; it never authors. `fix_instruction` describes what must change
 and how success is judged — it must not contain full replacement text.
 """
-from typing import List, Literal, Optional, Union, Annotated
+from typing import Annotated, List, Literal, Optional, Union
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Severity = Literal["critical", "major", "minor"]
@@ -65,7 +66,7 @@ class _ReviewReportBase(BaseModel):
     reviewed_at: str = Field(..., description="ISO 8601 UTC timestamp.")
 
     @model_validator(mode="after")
-    def _verdict_matches_flaws(self):
+    def _verdict_matches_flaws(self) -> "_ReviewReportBase":
         flaws = getattr(self, "flaws", [])
         ids = [f.flaw_id for f in flaws]
         if len(ids) != len(set(ids)):

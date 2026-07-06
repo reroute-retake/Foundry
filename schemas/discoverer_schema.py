@@ -1,5 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
 from typing import List, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 # CANONICAL EVALUATION ORDER (ADR 007) — DO NOT REORDER.
 # The Discoverer evaluates levels sequentially from lowest semantic entropy
