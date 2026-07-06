@@ -72,7 +72,7 @@ class MitigationPayload(StrictModel):
 # ==========================================
 
 class BaseNode(StrictModel):
-    canonical_id: str = Field(..., pattern=r"^[a-z][a-z0-9_]*$", description="Globally unique, snake_case identifier.")
+    canonical_id: str = Field(..., pattern=r"^[a-z][a-z0-9_]*$", max_length=64, description="Globally unique, snake_case identifier. Length-capped: ids map to filesystem paths (decision register #37).")
     title: str
     aliases: List[str] = Field(default_factory=list)
     core_definition: str = Field(..., max_length=350, description="Strictly atomic definition. No markdown lists.")

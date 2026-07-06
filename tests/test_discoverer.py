@@ -97,3 +97,35 @@ def test_topic_metadata_canonical_id_must_be_snake_case(bad_id: str) -> None:
             classification=_result(),
             provenance=_provenance(),
         )
+
+
+def test_canonical_id_length_capped_at_64() -> None:
+    """Filesystem-anchor guard (decision register #37)."""
+    assert ds.TopicMetadata(
+        canonical_id="a" * 64, classification=_result(), provenance=_provenance()
+    ).canonical_id
+    with pytest.raises(ValidationError):
+        ds.TopicMetadata(canonical_id="a" * 65, classification=_result(), provenance=_provenance())
+
+
+def test_normalize_quote_folds_typographic_variants() -> None:
+    """Smart quotes, em-dashes, ellipses, NBSP, and whitespace runs all fold (register #36)."""
+    fancy = "The  WAL’s records — “append-only”…"
+    plain = "The WAL's records - \"append-only\"..."
+    assert ds.normalize_quote(fancy) == ds.normalize_quote(plain)
+
+
+def test_normalize_quote_does_not_erase_semantic_difference() -> None:
+    assert ds.normalize_quote("append-only log") != ds.normalize_quote("append-only ledger")
+
+
+def test_topic_metadata_accepts_typographic_divergence() -> None:
+    """The recovered SOURCE span may differ typographically from the LLM's quote."""
+    source_span = "drops requests when the arrival rate exceeds a “threshold”"
+    llm_quote = 'drops requests when the arrival rate exceeds a "threshold"'
+    metadata = ds.TopicMetadata(
+        canonical_id="rate_limiting",
+        classification=_result(evidence_quote=llm_quote),
+        provenance=_provenance(quotation_snippet=source_span),
+    )
+    assert metadata.provenance.quotation_snippet == source_span

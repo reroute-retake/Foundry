@@ -1,3 +1,5 @@
+import re
+import unicodedata
 from typing import List, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -12,6 +14,33 @@ TaxonomyLevel = Literal[
     "Attack Vector", "Mitigation", "Data Structure", "Algorithm",
     "Pattern", "Failure Mode", "Interface", "Metric", "Tool", "Concept"
 ]
+
+# Typographic characters LLMs habitually fold to ASCII (or vice versa).
+_TYPOGRAPHIC_FOLD = str.maketrans({
+    "‘": "'", "’": "'", "‚": "'", "‛": "'",
+    "“": '"', "”": '"', "„": '"', "‟": '"',
+    "–": "-", "—": "-", "−": "-",
+})
+
+
+def normalize_quote(text: str) -> str:
+    """Canonical normalization for evidence-quote comparison (decision register #36).
+
+    Conservative by design: NFKC (handles ellipses, ligatures, fullwidth forms,
+    non-breaking spaces), typographic quote/dash folding, and whitespace-run
+    collapsing. It deliberately does NOT strip punctuation wholesale — aggressive
+    normalization creates false-positive matches on short quotes.
+
+    This function is the single source of truth: the schema validator below and the
+    Discoverer script's chunk-matching pass MUST both use it, so the check and the
+    checker can never drift. The script may employ more aggressive tiers to LOCATE
+    the span in the chunk, but the recovered source text it stores must still pass
+    this conservative equivalence — a quote too mangled to pass is weak grounding
+    and should trigger an LLM retry, not a workaround.
+    """
+    folded = unicodedata.normalize("NFKC", text).translate(_TYPOGRAPHIC_FOLD)
+    return re.sub(r"\s+", " ", folded).strip()
+
 
 class EvaluationStep(BaseModel):
     """
@@ -34,7 +63,7 @@ class ClassificationResult(BaseModel):
     sequence_trace: List[EvaluationStep] = Field(..., description="The sequential evaluations from Level 1 downwards.")
     final_classification: TaxonomyLevel = Field(..., description="The first level that evaluated to True.")
     extracted_entity_name: str = Field(..., description="The isolated, canonical technical noun being classified.")
-    evidence_quote: str = Field(..., max_length=350, description="Verbatim snippet from the supplied chunk that grounds the entity. The Discoverer script MUST verify this is a substring of the chunk before accepting the result (deterministic hallucination check).")
+    evidence_quote: str = Field(..., max_length=350, description="Snippet from the supplied chunk that grounds the entity. LLMs fold smart quotes and collapse whitespace, so the Discoverer script MUST locate this in the chunk via normalize_quote() matching — never naive substring — and store the recovered SOURCE span in provenance.quotation_snippet.")
 
 
 class TopicMetadata(StrictModel):
@@ -43,16 +72,21 @@ class TopicMetadata(StrictModel):
     Composed deterministically by the Discoverer script, never by the LLM: the LLM
     emits only `classification` (including `evidence_quote`); the script — which chose
     the chunk and therefore knows `document_id` and `chunk_span` — builds `provenance`,
-    copying the substring-verified `evidence_quote` into `quotation_snippet`. Per the
-    ubiquitous language, Topic Metadata carries a concept's classification and its
-    source context, completely devoid of synthesized explanations.
+    storing the span it RECOVERED FROM THE SOURCE in `quotation_snippet` (verbatim
+    source text, provably present in the document). The recovered span and the LLM's
+    quote must agree under normalize_quote(); typographic divergence is tolerated,
+    semantic divergence is not. Per the ubiquitous language, Topic Metadata carries a
+    concept's classification and its source context, completely devoid of synthesized
+    explanations.
     """
-    canonical_id: str = Field(..., pattern=r"^[a-z][a-z0-9_]*$", description="snake_case id derived by slugifying extracted_entity_name (deterministic script logic).")
+    canonical_id: str = Field(..., pattern=r"^[a-z][a-z0-9_]*$", max_length=64, description="snake_case id derived by slugifying extracted_entity_name (deterministic script logic). Length-capped: ids map to filesystem paths (decision register #37).")
     classification: ClassificationResult
     provenance: SourceRef
 
     @model_validator(mode="after")
     def _quote_consistent(self) -> "TopicMetadata":
-        if self.provenance.quotation_snippet != self.classification.evidence_quote:
-            raise ValueError("provenance.quotation_snippet must equal classification.evidence_quote")
+        if normalize_quote(self.provenance.quotation_snippet) != normalize_quote(self.classification.evidence_quote):
+            raise ValueError(
+                "provenance.quotation_snippet must normalized-match classification.evidence_quote (normalize_quote)"
+            )
         return self

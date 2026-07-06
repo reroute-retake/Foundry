@@ -45,6 +45,31 @@ def test_manifest_builds_with_defaults() -> None:
     assert manifest.nodes == {}
 
 
+def test_ghost_stub_round_trip() -> None:
+    stub = pl.GhostStub(
+        canonical_id="leaderless_replication",
+        title_guess="Leaderless Replication",
+        referenced_by="read_repair",
+        predicate="REQUIRES",
+        created_at="2026-07-07T00:00:00Z",
+    )
+    assert stub.canonical_id == "leaderless_replication"
+
+
+@pytest.mark.parametrize("bad_id", ["Leaderless-Replication", "9ghost", "a" * 65])
+def test_ghost_stub_id_is_filesystem_guarded(bad_id: str) -> None:
+    """Ghost ids originate from LLM-emitted edge targets and create nodes/<id>/ paths
+    on disk — pattern and length are enforced in-schema (decision register #30/#37)."""
+    with pytest.raises(ValidationError):
+        pl.GhostStub(
+            canonical_id=bad_id,
+            title_guess="x",
+            referenced_by="read_repair",
+            predicate="REQUIRES",
+            created_at="2026-07-07T00:00:00Z",
+        )
+
+
 # ---- Transition-table invariants (guard future edits to TRANSITION_RULES) ----
 
 def test_rule_actions_are_unique_and_release_is_absent() -> None:

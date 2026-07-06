@@ -119,7 +119,7 @@ LedgerEvent = Annotated[
 class GhostStub(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
-    canonical_id: str
+    canonical_id: str = Field(..., pattern=r"^[a-z][a-z0-9_]*$", max_length=64, description="snake_case id. A ghost creates nodes/<id>/ on disk, so it is a filesystem anchor: pattern and length are enforced here (decision register #30/#37).")
     title_guess: str
     referenced_by: str = Field(..., description="canonical_id of the node whose edge created this stub.")
     predicate: str = Field(..., description="Edge predicate that referenced the missing target.")

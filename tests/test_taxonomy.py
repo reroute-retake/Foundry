@@ -83,3 +83,11 @@ def test_canonical_id_must_be_snake_case(bad_id: str) -> None:
     node["canonical_id"] = bad_id
     with pytest.raises(ValidationError):
         ADAPTER.validate_python(node)
+
+
+def test_canonical_id_length_capped_at_64() -> None:
+    """Filesystem-anchor guard (decision register #37)."""
+    node = make_node("Concept")
+    node["canonical_id"] = "a" * 65
+    with pytest.raises(ValidationError):
+        ADAPTER.validate_python(node)

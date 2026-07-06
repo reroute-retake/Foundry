@@ -12,6 +12,10 @@ from pydantic import Field, model_validator
 
 from taxonomy import StrictModel
 
+# Deeper nesting defeats a MOC's pedagogical purpose (decision register #38).
+# The Curator prompt mirrors this constraint; the validator enforces it.
+MAX_MOC_DEPTH = 3
+
 
 class MocEntry(StrictModel):
     canonical_id: str
@@ -35,7 +39,7 @@ MocSection.model_rebuild()
 
 
 class MapOfContent(StrictModel):
-    moc_id: str = Field(..., description="Unique snake_case identifier in the MOC namespace.")
+    moc_id: str = Field(..., pattern=r"^[a-z][a-z0-9_]*$", max_length=64, description="Unique snake_case identifier in the MOC namespace. Length-capped: maps to .skills-data/mocs/<moc_id>.json (decision register #37).")
     title: str
     scope: str = Field(..., max_length=350, description="The Knowledge Graph cluster this MOC maps.")
     sections: List[MocSection] = Field(..., min_length=1)
@@ -46,11 +50,13 @@ class MapOfContent(StrictModel):
 
     @model_validator(mode="after")
     def _sequence_consistent(self) -> "MapOfContent":
-        def collect(sections: List[MocSection]) -> List[str]:
+        def collect(sections: List[MocSection], depth: int = 1) -> List[str]:
+            if sections and depth > MAX_MOC_DEPTH:
+                raise ValueError(f"section nesting exceeds MAX_MOC_DEPTH={MAX_MOC_DEPTH}")
             ids: List[str] = []
             for section in sections:
                 ids.extend(entry.canonical_id for entry in section.entries)
-                ids.extend(collect(section.subsections))
+                ids.extend(collect(section.subsections, depth + 1))
             return ids
 
         if len(self.learning_sequence) != len(set(self.learning_sequence)):

@@ -75,3 +75,37 @@ def test_annotation_length_cap() -> None:
 def test_stray_field_rejected() -> None:
     with pytest.raises(ValidationError):
         moc.MapOfContent(**make_moc(), stray=1)
+
+
+@pytest.mark.parametrize("bad_id", ["Replication-MOC", "ReplicationMoc", "9moc", "a" * 65])
+def test_moc_id_pattern_and_length_enforced(bad_id: str) -> None:
+    """moc_id is a filesystem anchor (decision register #37)."""
+    with pytest.raises(ValidationError):
+        moc.MapOfContent(**make_moc(moc_id=bad_id))
+
+
+def _nested(depth: int) -> dict:
+    """Build a section chain `depth` levels deep, one entry per level."""
+    section = {
+        "heading": f"Level {depth}",
+        "entries": [{"canonical_id": f"node_{depth}"}],
+        "subsections": [],
+    }
+    for level in range(depth - 1, 0, -1):
+        section = {
+            "heading": f"Level {level}",
+            "entries": [{"canonical_id": f"node_{level}"}],
+            "subsections": [section],
+        }
+    return section
+
+
+def test_moc_depth_three_accepted() -> None:
+    m = moc.MapOfContent(**make_moc(sections=[_nested(3)], learning_sequence=[]))
+    assert m.sections[0].subsections[0].subsections[0].heading == "Level 3"
+
+
+def test_moc_depth_four_rejected() -> None:
+    """MAX_MOC_DEPTH guard (decision register #38)."""
+    with pytest.raises(ValidationError):
+        moc.MapOfContent(**make_moc(sections=[_nested(4)], learning_sequence=[]))
