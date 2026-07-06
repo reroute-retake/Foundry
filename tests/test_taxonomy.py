@@ -75,3 +75,11 @@ def test_edge_rejects_invented_predicate() -> None:
 def test_sourceref_rejects_stray_field() -> None:
     with pytest.raises(ValidationError):
         taxonomy.SourceRef(document_id="d", chunk_span="0:1", quotation_snippet="q", stray=1)
+
+
+@pytest.mark.parametrize("bad_id", ["Test-Node", "TestNode", "9node", "test node"])
+def test_canonical_id_must_be_snake_case(bad_id: str) -> None:
+    node = make_node("Concept")
+    node["canonical_id"] = bad_id
+    with pytest.raises(ValidationError):
+        ADAPTER.validate_python(node)
