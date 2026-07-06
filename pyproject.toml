@@ -36,7 +36,7 @@ select = ["E", "F", "I", "B"]
 ignore = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["taxonomy", "discoverer_schema", "review", "pipeline_ledger", "support"]
+known-first-party = ["taxonomy", "discoverer_schema", "review", "pipeline_ledger", "enrichment", "moc", "support"]
 
 [tool.mypy]
 python_version = "3.12"

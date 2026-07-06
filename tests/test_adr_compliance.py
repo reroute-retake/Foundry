@@ -11,6 +11,8 @@ from typing import get_args
 from pydantic import BaseModel
 
 import discoverer_schema
+import enrichment
+import moc
 import pipeline_ledger
 import review
 import taxonomy
@@ -18,7 +20,7 @@ from support import CANONICAL_ORDER
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-SCHEMA_MODULES = [taxonomy, discoverer_schema, review, pipeline_ledger]
+SCHEMA_MODULES = [taxonomy, discoverer_schema, review, pipeline_ledger, enrichment, moc]
 
 # ADR 003: Phase-1 extraction code must never import an LLM client.
 FORBIDDEN_LLM_MODULES = {
