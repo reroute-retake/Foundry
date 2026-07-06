@@ -121,11 +121,14 @@ class MitigationNode(BaseNode):
 # Orchestrator Union Schema
 # ==========================================
 
+# Members listed in the CANONICAL EVALUATION ORDER (ADR 007) for consistency with
+# docs/taxonomy.md and schemas/discoverer_schema.py. Validation routing is O(1) via
+# the `primary_kind` discriminator, so this ordering is documentation, not logic.
 KnowledgeArtifact = Annotated[
     Union[
-        ConceptNode, AlgorithmNode, PatternNode, DataStructureNode, 
-        ToolNode, InterfaceNode, MetricNode, FailureModeNode, 
-        AttackVectorNode, MitigationNode
+        AttackVectorNode, MitigationNode, DataStructureNode, AlgorithmNode,
+        PatternNode, FailureModeNode, InterfaceNode, MetricNode,
+        ToolNode, ConceptNode
     ],
     Field(discriminator="primary_kind")
 ]

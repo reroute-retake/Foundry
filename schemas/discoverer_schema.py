@@ -1,8 +1,12 @@
 from pydantic import BaseModel, Field
 from typing import List, Literal
 
+# CANONICAL EVALUATION ORDER (ADR 007) — DO NOT REORDER.
+# The Discoverer evaluates levels sequentially from lowest semantic entropy
+# ("Attack Vector") to highest ("Concept"); the first TRUE locks the classification.
+# docs/taxonomy.md and Foundry.md mirror this exact sequence.
 TaxonomyLevel = Literal[
-    "Attack Vector", "Mitigation", "Data Structure", "Algorithm", 
+    "Attack Vector", "Mitigation", "Data Structure", "Algorithm",
     "Pattern", "Failure Mode", "Interface", "Metric", "Tool", "Concept"
 ]
 

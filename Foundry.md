@@ -99,7 +99,7 @@ Dependencies are mapped via strict graph edges (`IMPLEMENTS`, `REQUIRES`), not b
 
 # Note Taxonomy (The 10 Canonical Types)
 
-The system supports exactly 10 strictly bounded note types, evaluated in this precise sequence from lowest to highest semantic entropy:
+The system supports exactly 10 strictly bounded note types, evaluated in this precise sequence from lowest to highest semantic entropy (the canonical evaluation order per ADR 007 — mirrored exactly by `docs/taxonomy.md` and `schemas/discoverer_schema.py`, and never to be reordered independently):
 
 1. **Attack Vector:** Malicious exploits (e.g., SQL Injection)
     
