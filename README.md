@@ -29,7 +29,9 @@ Nine phases, two frontier-review gates, sequenced by a script-enforced **Pipelin
 | `docs/adr/` | 17 Architecture Decision Records (the "why") |
 | `docs/taxonomy.md` · `docs/classification-predicates.md` · `docs/classification-axioms.md` | The 10-type classification system: canonical order, entry predicates, collision tie-breakers |
 | `docs/pipeline-ledger.md` | Sequencing authority: state machine, preconditions, storage model |
-| `schemas/` | Pydantic v2 contracts: `taxonomy.py`, `discoverer_schema.py`, `pipeline_ledger.py` |
+| `docs/decision-register.md` | Ratified sub-ADR judgment calls with rationale and enforcement pointers |
+| `docs/implementation-plan.md` | Phased walking-skeleton plan (Phase 0–7) with exit criteria |
+| `schemas/` | Pydantic v2 contracts: `taxonomy.py`, `discoverer_schema.py`, `review.py`, `pipeline_ledger.py`, `enrichment.py`, `moc.py` |
 | `AGENTS.md` | Binding rules for AI coding agents working in this repo |
 
 **Read order for newcomers (human or agent):** `docs/constitution.md` → `docs/ubiquitous-language.md` → `Foundry.md` → `docs/pipeline-ledger.md` → the ADRs.
