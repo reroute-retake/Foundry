@@ -6,15 +6,19 @@ from pydantic import BaseModel, Field, ConfigDict
 # ==========================================
 
 EdgePredicate = Literal[
-    "IS_A", "PART_OF", "IMPLEMENTS", "REQUIRES", 
+    "IS_A", "PART_OF", "IMPLEMENTS", "REQUIRES",
     "MITIGATES", "CAUSES", "EXEMPLIFIES", "MEASURED_BY", "TRADES_OFF_AGAINST"
 ]
 
-class Edge(BaseModel):
+class StrictModel(BaseModel):
+    """Shared base: every Foundry model forbids stray fields (ADR 010; AGENTS.md rule 9)."""
+    model_config = ConfigDict(extra='forbid')
+
+class Edge(StrictModel):
     predicate: EdgePredicate = Field(..., description="Strictly enforced edge relationship type.")
     target_canonical_id: str = Field(..., description="The canonical_id of the target node.")
 
-class SourceRef(BaseModel):
+class SourceRef(StrictModel):
     document_id: str
     chunk_span: str = Field(..., description="Exact character or token span from the source document.")
     quotation_snippet: str = Field(..., description="Direct text snippet to verify ground truth.")
@@ -23,52 +27,50 @@ class SourceRef(BaseModel):
 # Taxonomy Payloads
 # ==========================================
 
-class ConceptPayload(BaseModel):
-    pass 
+class ConceptPayload(StrictModel):
+    pass
 
-class AlgorithmPayload(BaseModel):
+class AlgorithmPayload(StrictModel):
     pre_conditions: List[str]
     post_conditions: List[str]
     time_complexity: str = Field(..., description="Big O notation.")
     space_complexity: str = Field(..., description="Big O notation.")
 
-class PatternPayload(BaseModel):
+class PatternPayload(StrictModel):
     primary_bottleneck: str = Field(..., description="Physical or logical scaling limit.")
 
-class DataStructurePayload(BaseModel):
+class DataStructurePayload(StrictModel):
     hardware_target: Literal["Memory", "Disk", "Network"]
     read_amplification_profile: str
     write_amplification_profile: str
 
-class ToolPayload(BaseModel):
+class ToolPayload(StrictModel):
     primary_runtime: str
     license_model: str
 
-class InterfacePayload(BaseModel):
+class InterfacePayload(StrictModel):
     protocol_type: str = Field(..., description="e.g., REST, gRPC, binary")
 
-class MetricPayload(BaseModel):
+class MetricPayload(StrictModel):
     unit_of_measurement: str
     mathematical_formalism: str = Field(..., description="LaTeX formatted formula.")
 
-class FailureModePayload(BaseModel):
+class FailureModePayload(StrictModel):
     trigger_conditions: List[str]
     blast_radius_assessment: str
 
-class AttackVectorPayload(BaseModel):
+class AttackVectorPayload(StrictModel):
     exploit_vector: str
     target_surface: str
 
-class MitigationPayload(BaseModel):
+class MitigationPayload(StrictModel):
     defense_mechanism: str
 
 # ==========================================
 # Base Node & Discriminated Subclasses
 # ==========================================
 
-class BaseNode(BaseModel):
-    model_config = ConfigDict(extra='forbid')
-    
+class BaseNode(StrictModel):
     canonical_id: str = Field(..., description="Globally unique, snake_case identifier.")
     title: str
     aliases: List[str] = Field(default_factory=list)
