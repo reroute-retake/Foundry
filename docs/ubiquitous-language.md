@@ -29,6 +29,8 @@ This document defines the strict vocabulary for the Foundry project. Every promp
 - **Enricher:** The LLM role that acts as an instructional designer to generate analogies, diagrams, and flashcards from validated JSON.
 - **Curator:** The LLM role that groups Canonical Knowledge into MOCs.
 - **Renderer:** The deterministic templating engine that translates Canonical Knowledge into Rendered Views.
+- **Conductor:** The Tier 1 planning role (Foundry's analogue of ForgeCode's built-in `muse`, defined as a custom read-only agent). It analyzes Pipeline Ledger state and plans phase batches, but is structurally forbidden from executing node mutations — which is why it is intentionally absent from the ledger's `RoleName` actor enum.
+- **Operator:** The human overseer running the ForgeCode CLI. The only entity authorized to evaluate a `QUARANTINED` node and execute a `RELEASE` transition in the Pipeline Ledger.
 
 ## Architecture & Orchestration Mechanisms
 
@@ -41,3 +43,7 @@ This document defines the strict vocabulary for the Foundry project. Every promp
 - **State Isolation (`.skills-data/`):** The architectural rule that skills are immutable definitions (`.forge/skills/`), and all generated artifacts are written to a strictly separated runtime directory.
 - **Pipeline Ledger:** The deterministic, machine-readable record in `.skills-data/pipeline/` of every node's lifecycle state and transition history. It is the sole sequencing authority: bundled mutation scripts consult its preconditions before executing and refuse out-of-order phase transitions.
 - **Model Context Protocol (MCP):** A standardized client-server architecture used to grant Tier 1 agents read-only access to external graph/vector databases (e.g., Neo4j, Qdrant).
+- **Canonical ID:** The globally unique, snake_case identifier for a knowledge node (pattern `^[a-z][a-z0-9_]*$`, capped at 64 characters). It serves as the primary key in the Knowledge Graph, the target for relationship edges, and the deterministic anchor for the node's filesystem path.
+- **Copy-on-Write Revisions:** The physical enforcement of immutability (ADR 002). Any state change to a node — applying a fix, appending edges — generates a net-new file (e.g., `rev-002.knowledge_draft.json`) rather than modifying the previous revision in place.
+- **Double-Gated Two-Pass Pipeline:** The execution model that strictly separates ontological fact extraction (Pass 1) from pedagogical enrichment (Pass 2). Each pass is protected by an independent Expert Review & Resolution Gate to prevent hallucination bleed (ADR 008).
+- **Provenance (Normalized Grounding):** The exact, verifiable textual span from the Source Material that justifies an extracted entity or fact. Enforces "LLMs emit language; scripts emit facts": LLM quotes are verified against the source chunk via conservative normalization (`normalize_quote`: NFKC, typographic quote/dash folding, whitespace collapse), and the recovered source span is what gets stored.
