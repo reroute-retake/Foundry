@@ -1,0 +1,42 @@
+[project]
+name = "foundry"
+version = "0.1.0"
+description = "AI-assisted knowledge refinement pipeline — structured knowledge as the canonical artifact, Markdown as a rendered view."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "reroute-retake" }]
+classifiers = [
+    "Private :: Do Not Upload",  # guardrail: this project is not published to PyPI
+]
+dependencies = [
+    "pydantic>=2.13,<3",
+]
+
+# Heavy pipeline dependencies (extractor, serving, graph) are deliberately NOT pinned
+# yet — pending the extractor benchmark and constrained-decoding spike (see review P1).
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+
+[tool.uv]
+package = false  # config/contract repo (no build); uv manages the environment only
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["schemas"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
