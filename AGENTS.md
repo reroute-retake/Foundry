@@ -20,11 +20,11 @@ If a task requires deviating from an accepted ADR: **STOP. Do not silently devia
 8. **Edge vocabulary is closed** (`EdgePredicate` in `schemas/taxonomy.py`); dangling targets become Ghost stubs via the ledger's `CREATE_GHOST` — a `GhostStub` is not a `BaseNode`. (ADR 009)
 9. **Every Pydantic model:** v2, discriminated unions where variant, and `model_config = ConfigDict(extra='forbid')` — no exceptions. (ADR 010)
 10. **Discoverer runs under constrained decoding** at the serving layer (vLLM/Outlines class), invoked as a script — never as free text generation. (ADR 011)
-11. **Tier definitions (ADR 012):**
-    - Tier 1 (Reviewer-type): `tools: [read, search]` (+ read-only MCP). Never `write`, `patch`, `shell`, `fetch`, `remove`.
+11. **Tier definitions (ADR 012)** — tool ids verified against ForgeCode 2.13.16 `:tools` output (register #45):
+    - Tier 1 (Reviewer-type): `tools: [read, fs_search]` (+ read-only MCP). Never `write`, `patch`, `multi_patch`, `undo`, `remove`, `shell`, `fetch`, `task` (spawns sub-agents — defeats tier isolation), or `skill`.
     - Tier 2 (Discoverer, Author, Fixer, Linker, Enricher): `tools: [read, shell]`. Mutate state **only** by invoking bundled scripts in `.forge/skills/`.
     - Formal gate reviews are executed by Tier 2 scripts invoking the reviewer model as a tool-less structured-output API call (`docs/pipeline-ledger.md` §3).
-    - Verify exact tool ids against `:tools` output before authoring agent files.
+    - Grants are allowlists — any id not listed is not granted. Re-verify per-agent via in-session `:tools` when authoring agent files (Phase 6).
 12. **State isolation:** `.forge/skills/` holds immutable definitions only; ALL runtime artifacts go to `.skills-data/`. (ADR 013)
 13. **MCP is read-only for agents;** graph writes happen via scripts. MCP tools bypass `permissions.yaml` — read-only must be enforced server-side. (ADR 014)
 14. **ForgeCode is the harness, not the pipeline driver.** The Pipeline Ledger is the sole sequencing authority; every state transition goes through a ledger-checking script — a driver that bypasses the ledger is a constitutional violation. (ADR 016, 017)

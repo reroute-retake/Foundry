@@ -17,7 +17,7 @@ Source Material ─▶ Extracted Text ─▶ Topic Metadata ─▶ Knowledge Dra
 
 Nine phases, two frontier-review gates, sequenced by a script-enforced **Pipeline Ledger** — no LLM ever dictates workflow. Agents run on the [ForgeCode](https://forgecode.dev) harness with tiered tool scoping; all state mutations flow through deterministic, Pydantic-validating Python scripts.
 
-- **ForgeCode version:** _pin on first install_ (`forge --version`) — required by ADR 016.
+- **ForgeCode version:** 2.13.16 (pinned 2026-07-07; the installer fetches the latest release — verify `forge --version` against this pin after any reinstall, and keep `[updates] auto_update = false` on the runtime machine, register #46) — required by ADR 016.
 
 ## Repository map
 
