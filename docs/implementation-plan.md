@@ -39,7 +39,7 @@ Everything below builds against contracts that already exist and are CI-guarded:
 | Install + pin Hermes | `curl -fsSL https://hermes-agent.nousresearch.com/install.sh \| bash` (`--skip-browser`); pin the **upstream sha** in README (the git installer tracks `main`; `--commit <sha>` for reproducible installs — register #50) |
 | Constitutional Bootstrap | Set register #49 config: `approvals.mode manual`, `memory.write_approval`/`skills.write_approval` true, `approvals.deny` globs over `.skills-data/`, local backend |
 | Enumerate toolsets | `hermes tools list` + session banner; confirm Tier-2 `-t terminal` and pin the Tier-1 minimal set (AGENTS.md rule 11) |
-| Provider access | `hermes model` → `xai-oauth` (SuperGrok); confirm a chat turn succeeds (watch #26847) — surface-2 script key is a separate decision (register #47) |
+| Provider access | Two surfaces: (1) harness — `hermes model` → `xai-oauth` (SuperGrok), confirm a chat turn (watch #26847); (2) scripts — set `FOUNDRY_DISCOVERER_BASE_URL=https://api.x.ai/v1` + a prepaid-capped xAI API key (`grok-4.3`), register #47 |
 | Choose the chapter | One markdown chapter placed under `works/sources/` |
 
 **Exit:** upstream sha pinned in-repo; bootstrap config set; toolsets recorded; a chat turn succeeds; source file staged. *(Spike status: everything except the `approvals.deny` glob live-test and the Tier-1 minimal set was verified 2026-07-15/16 — see `docs/hermes-migration-plan.md` §12.)*
