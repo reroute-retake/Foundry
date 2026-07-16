@@ -37,14 +37,14 @@ select = ["E", "F", "I", "B"]
 ignore = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["taxonomy", "discoverer_schema", "review", "pipeline_ledger", "enrichment", "moc", "support"]
+known-first-party = ["taxonomy", "discoverer_schema", "review", "pipeline_ledger", "enrichment", "moc", "support", "canonical_json", "workspace", "ledger", "status"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["schemas"]
+files = ["schemas", "core"]
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["schemas", "tests"]
+pythonpath = ["schemas", "core", "tests"]
