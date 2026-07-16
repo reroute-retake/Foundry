@@ -1,7 +1,12 @@
 # ADR 016: Adoption of ForgeCode as the Agent Harness
 
 - **Date:** 2026-07-07
-- **Status:** Accepted
+- **Status:** Superseded by ADR 018 (2026-07-17)
+
+> **Superseded — retained for history.** Hermes Agent replaces ForgeCode in the harness
+> role; see ADR 018 and `docs/hermes-migration-plan.md`. The boundaries this ADR
+> established (harness ≠ pipeline driver; deterministic enforcement in scripts; version
+> pinning) are preserved verbatim by its successor.
 
 ## Context
 

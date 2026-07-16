@@ -7,7 +7,7 @@ Neo4j/Qdrant/MCP, the headless driver, the extractor benchmark, the eval harness
 
 Everything below builds against contracts that already exist and are CI-guarded:
 `schemas/` (6 modules, 100 tests), `docs/pipeline-ledger.md` (write protocol),
-`AGENTS.md` (binding rules), `docs/decision-register.md` (38+ ratified decisions).
+`AGENTS.md` (binding rules), `docs/decision-register.md` (50 ratified decisions).
 
 ## Kickoff Decisions (adopted for this plan — register #39, #40)
 
@@ -32,17 +32,17 @@ Everything below builds against contracts that already exist and are CI-guarded:
 
 ---
 
-## Phase 0 — Operator pre-flight (user's machine, ~1 hour)
+## Phase 0 — Operator pre-flight (user's machine; largely discharged 2026-07-15/16)
 
 | Task | Detail |
 | --- | --- |
-| Install ForgeCode | `curl -fsSL https://forgecode.dev/cli \| sh`; run `forge --version` |
-| Pin the version | Record in README ("ForgeCode version") and AGENTS.md (ADR 016 requirement) |
-| Verify tool ids | Run `:tools`; record exact ids (settles the `search` vs `sem_search` note in ADR 012 / AGENTS.md rule 11) |
-| Provider access | `:login`; confirm a frontier key (Anthropic or OpenRouter) works — needed for Reviewer and day-1 Discoverer |
+| Install + pin Hermes | `curl -fsSL https://hermes-agent.nousresearch.com/install.sh \| bash` (`--skip-browser`); pin the **upstream sha** in README (the git installer tracks `main`; `--commit <sha>` for reproducible installs — register #50) |
+| Constitutional Bootstrap | Set register #49 config: `approvals.mode manual`, `memory.write_approval`/`skills.write_approval` true, `approvals.deny` globs over `.skills-data/`, local backend |
+| Enumerate toolsets | `hermes tools list` + session banner; confirm Tier-2 `-t terminal` and pin the Tier-1 minimal set (AGENTS.md rule 11) |
+| Provider access | `hermes model` → `xai-oauth` (SuperGrok); confirm a chat turn succeeds (watch #26847) — surface-2 script key is a separate decision (register #47) |
 | Choose the chapter | One markdown chapter placed under `works/sources/` |
 
-**Exit:** version pinned in-repo; tool ids recorded; API call succeeds; source file staged.
+**Exit:** upstream sha pinned in-repo; bootstrap config set; toolsets recorded; a chat turn succeeds; source file staged. *(Spike status: everything except the `approvals.deny` glob live-test and the Tier-1 minimal set was verified 2026-07-15/16 — see `docs/hermes-migration-plan.md` §12.)*
 
 ## Phase 1 — Ledger core library (`core/`)
 
@@ -73,8 +73,8 @@ via ledger calls only.
 
 ## Phase 2 — Deterministic skills: ingest + status
 
-`.forge/skills/foundry-ingest/` (`SKILL.md` + `scripts/register_document.py`,
-`scripts/extract_document.py`) and `.forge/skills/foundry-status/`.
+`skills/foundry-ingest/` (`SKILL.md` + `scripts/register_document.py`,
+`scripts/extract_document.py`) and `skills/foundry-status/`.
 
 - v1 extractor = markdown identity transform (copy + hash), emitting `REGISTER` and
   `EXTRACT` DocumentEvents and the `extracted_text` artifact.
@@ -85,7 +85,7 @@ and artifacts; `status` reports the document as extracted.
 
 ## Phase 3 — Discoverer skill (first LLM stage)
 
-`.forge/skills/foundry-discover/` — `scripts/run_discover.py`:
+`skills/foundry-discover/` — `scripts/run_discover.py`:
 
 1. Chunk the Extracted Text (v1: markdown-section chunks).
 2. Call the structured-output endpoint with the `ClassificationResult` schema; prompt
@@ -111,7 +111,7 @@ classification spot-check by the Operator looks sane.
 
 ## Phase 4 — Author skill (second LLM stage)
 
-`.forge/skills/foundry-draft/` — `scripts/run_draft.py`:
+`skills/foundry-draft/` — `scripts/run_draft.py`:
 
 - **Per-kind schema selection:** `primary_kind` is already decided by Discovery, so
   the Author is constrained to the *specific* node schema for that kind — smaller
@@ -134,7 +134,7 @@ the chapter's nodes.
 
 ## Phase 5 — Gate 1: review, fix, promote (third LLM stage)
 
-`.forge/skills/foundry-gate1/` — three scripts per `docs/pipeline-ledger.md` §3:
+`skills/foundry-gate1/` — three scripts per `docs/pipeline-ledger.md` §3:
 
 - `run_review_base.py`: frontier model as a tool-less structured-output call against
   the `OntologyReviewReport` schema; persist report; record verdict.
@@ -146,25 +146,29 @@ the chapter's nodes.
 **Exit:** a full Gate-1 cycle observed on real nodes — ideally at least one
 fail → fix → re-review → pass, and one first-pass promotion.
 
-## Phase 6 — Agents, runbook, guardrail bootstrap
+## Phase 6 — Role launch commands, runbook, guardrail bootstrap
 
-- `.forge/agents/`: `conductor.md` (Tier 1 — closes the glossary's forward
-  pointer), `discoverer.md`, `author.md`, `fixer.md` (Tier 2), `reviewer.md`
-  (Tier 1, exploratory only — formal gate stays script-mediated). Frontmatter uses
-  the tool ids verified in Phase 0, plus bounded-loop settings.
+- Role launch definitions: per-role Hermes invocations with pinned toolset
+  allowlists — `conductor` (Tier 1 — closes the glossary's forward pointer),
+  `discoverer`, `author`, `fixer` (Tier 2: `hermes -t terminal`), `reviewer`
+  (Tier 1, exploratory only — the formal gate stays script-mediated). Recorded in
+  `docs/runbook.md` and/or thin wrapper scripts; bounded-loop settings via
+  `delegation.max_iterations` where delegation is used.
 - `docs/runbook.md`: the Operator's step-by-step for one batch (the ~9 commands).
-- `permissions.yaml` bootstrap spec (documented contents + install step; restricted
-  mode optional for interactive v1).
-- AGENTS.md: fill the verified tool ids; add the runbook pointer.
+- Constitutional Bootstrap spec (register #49): documented `~/.hermes/config.yaml`
+  contents + install/verification step (`approvals.mode manual`, write_approval
+  gates, `approvals.deny` globs over `.skills-data/`, local backend).
+- AGENTS.md: confirm rules 11/15 against the machine; add the runbook pointer.
 
-**Take care (tool-id silent failure):** an unknown tool id in agent frontmatter is
-silently ignored, and a wrong string in `permissions.yaml` simply never matches —
-both fail quiet or fail open. Defense: after authoring each agent file, run
-`:tools` *inside that agent's session* and confirm the effective toolset matches
-its tier definition exactly.
+**Take care (toolset silent failure):** a mistyped toolset in a launch command
+silently yields a different tool registry, and a wrong `approvals.deny` glob simply
+never matches — both fail quiet or fail open. Defense: after authoring each role
+launch command, read the session banner and run `hermes tools list` for that session
+and confirm the effective toolset matches its tier definition exactly (spike-proven
+method — migration plan §12).
 
-**Exit:** the full skeleton driven end-to-end from an interactive ForgeCode session
-using the agent definitions; per-agent `:tools` output matches tier definitions.
+**Exit:** the full skeleton driven end-to-end from interactive Hermes sessions using
+the role launch commands; each session banner matches its tier definition.
 
 ## Phase 7 — Acceptance run + retrospective
 
@@ -195,13 +199,13 @@ Phase 6 agent files can be drafted alongside Phases 3–5. The local-serving spi
 | Provider structured-output limits on complex schemas | Per-kind schema selection (Phase 4) keeps grammars small; ClassificationResult is flat |
 | Evidence-quote recovery failure rate | Bounded retries + discovery-failures report; failures are data for the eval set |
 | Chunking quality drives classification quality | v1 section-based chunking is deliberately simple; revisit with Phase 7 metrics |
-| ForgeCode tool-id mismatch in agent frontmatter | Resolved in Phase 0 before any agent file is written; re-verified per-agent via in-session `:tools` (Phase 6) |
+| Hermes toolset mismatch in a role launch command | Session-banner + `hermes tools list` verification per role (Phase 0/6; spike-proven) |
 | Cost of frontier gates | Skeleton is one chapter (~tens of nodes); Phase 7 captures the real number before scaling |
 
 ## Session bootstrap (read this first tomorrow)
 
 1. Read `AGENTS.md`, then this plan, then `docs/pipeline-ledger.md` §3–4.
-2. Confirm Phase 0 is complete (version pinned, tool ids recorded, key working).
+2. Confirm Phase 0 is complete (upstream sha pinned, bootstrap config set, toolsets recorded, provider working).
 3. Work proceeds phase-by-phase via the established loop: propose → review → gates
    (`ruff` / `mypy` / `pytest`) green locally → commit → CI green.
 4. New design decisions go to `docs/decision-register.md`; ADR deviations go through

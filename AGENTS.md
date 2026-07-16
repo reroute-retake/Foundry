@@ -20,14 +20,15 @@ If a task requires deviating from an accepted ADR: **STOP. Do not silently devia
 8. **Edge vocabulary is closed** (`EdgePredicate` in `schemas/taxonomy.py`); dangling targets become Ghost stubs via the ledger's `CREATE_GHOST` — a `GhostStub` is not a `BaseNode`. (ADR 009)
 9. **Every Pydantic model:** v2, discriminated unions where variant, and `model_config = ConfigDict(extra='forbid')` — no exceptions. (ADR 010)
 10. **Discoverer runs under constrained decoding** at the serving layer (vLLM/Outlines class), invoked as a script — never as free text generation. (ADR 011)
-11. **Tier definitions (ADR 012)** — tool ids verified against ForgeCode 2.13.16 `:tools` output (register #45):
-    - Tier 1 (Reviewer-type): `tools: [read, fs_search]` (+ read-only MCP). Never `write`, `patch`, `multi_patch`, `undo`, `remove`, `shell`, `fetch`, `task` (spawns sub-agents — defeats tier isolation), or `skill`.
-    - Tier 2 (Discoverer, Author, Fixer, Linker, Enricher): `tools: [read, shell]`. Mutate state **only** by invoking bundled scripts in `.forge/skills/`.
-    - Formal gate reviews are executed by Tier 2 scripts invoking the reviewer model as a tool-less structured-output API call (`docs/pipeline-ledger.md` §3).
-    - Grants are allowlists — any id not listed is not granted. Re-verify per-agent via in-session `:tools` when authoring agent files (Phase 6).
-12. **State isolation:** `.forge/skills/` holds immutable definitions only; ALL runtime artifacts go to `.skills-data/`. (ADR 013)
-13. **MCP is read-only for agents;** graph writes happen via scripts. MCP tools bypass `permissions.yaml` — read-only must be enforced server-side. (ADR 014)
-14. **ForgeCode is the harness, not the pipeline driver.** The Pipeline Ledger is the sole sequencing authority; every state transition goes through a ledger-checking script — a driver that bypasses the ledger is a constitutional violation. (ADR 016, 017)
+11. **Tier definitions (ADR 012, amended by ADR 018)** — tool scoping is by session-launch allowlist (`hermes -t <toolsets>`), verified against Hermes v0.18.2 (register #49); a per-call toolset parameter does not exist and is never trusted.
+    - Tier 1 (Conductor; exploratory Reviewer): no mutating toolsets; reads via read-only MCP (ADR 014). Formal gate reviews are executed by Tier 2 scripts invoking the reviewer model as a tool-less structured-output API call (`docs/pipeline-ledger.md` §3). Exact minimal Tier-1 toolset pinned in Phase 6 (`file` bundles read+write).
+    - Tier 2 (Discoverer, Author, Fixer, Linker, Enricher): launched `hermes -t terminal`. Mutate state **only** by invoking bundled scripts in `skills/`. Never `file`, `delegation`, `memory`, or `code_execution`.
+    - Delegated sub-agents inherit the parent's toolset minus a hardcoded blocked set (`delegate_task`, `clarify`, `memory`, `send_message`, `execute_code`, `cronjob`).
+    - Grants are allowlists — a toolset not launched is not granted. Re-verify per-role via the session banner + `hermes tools list` when authoring launch commands (Phase 6).
+12. **State isolation:** `skills/` holds immutable definitions only; ALL runtime artifacts go to `.skills-data/`. (ADR 013)
+13. **MCP is read-only for agents;** graph writes happen via scripts. MCP tools bypass approval policy — read-only must be enforced server-side. (ADR 014)
+14. **Hermes is the harness, not the pipeline driver.** The Pipeline Ledger is the sole sequencing authority; every state transition goes through a ledger-checking script — a driver (including Hermes Kanban/cron) that bypasses the ledger is a constitutional violation. (ADR 017, 018)
+15. **Runtime bootstrap is a guardrail prerequisite (ADR 018, register #49).** Every Foundry session runs with `approvals.mode: manual` (never the `smart` default — it lets an aux LLM auto-approve dangerous commands), `memory.write_approval: true`, `skills.write_approval: true`, `approvals.deny` globs over `.skills-data/`, a local (non-container) backend, `xai-oauth` auth, and never `--yolo`. A session missing these is a degraded-guardrail run.
 
 ## Ledger Rules (operational)
 
@@ -37,7 +38,7 @@ If a task requires deviating from an accepted ADR: **STOP. Do not silently devia
 
 ## Vocabulary
 
-Use the exact terms from `docs/ubiquitous-language.md` in every identifier, prompt, and schema. Core artifact chain: Source Material → Extracted Text → Topic Metadata → Knowledge Draft → Review Report → Canonical Knowledge. The harness is **ForgeCode**; the sequencing record is the **Pipeline Ledger**.
+Use the exact terms from `docs/ubiquitous-language.md` in every identifier, prompt, and schema. Core artifact chain: Source Material → Extracted Text → Topic Metadata → Knowledge Draft → Review Report → Canonical Knowledge. The harness is **Hermes Agent**; the sequencing record is the **Pipeline Ledger**.
 
 ## Coding Conventions
 

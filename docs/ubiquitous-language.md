@@ -17,9 +17,9 @@ This document defines the strict vocabulary for the Foundry project. Every promp
 
 ## Actors (Roles)
 
-- **ForgeCode:** The agent harness (the `forge` CLI) hosting all LLM roles as project-scoped agents. It supplies the runtime — tool scoping, per-role model routing, skills, MCP — but has zero domain intelligence and does not sequence the pipeline (ADR 016). In earlier documents, "Forge" referred to a single orchestrator; its responsibilities are now split between ForgeCode (agent runtime) and the Pipeline Ledger with its transition scripts (sequencing and schema enforcement, ADR 017).
-- **Tier 1 Agent:** A read-only ForgeCode agent (`tools: [read, search]` plus narrowly-scoped read-only MCP tools). Literally lacks the capability to mutate files or execute shell commands. Used for planning and review.
-- **Tier 2 Agent:** A script-executing ForgeCode agent (`tools: [read, shell]`). Lacks native file mutation tools but can invoke verified bundled scripts.
+- **Hermes Agent:** The agent harness (the `hermes` CLI) hosting all LLM roles as toolset-scoped sessions. It supplies the runtime — tool scoping (`hermes -t`), per-role model routing, skills, MCP — but has zero domain intelligence and does not sequence the pipeline (ADR 018). Historical note: early documents called the single orchestrator "Forge"; ADR 016 split it into ForgeCode (agent runtime) and the Pipeline Ledger with its transition scripts (sequencing and schema enforcement, ADR 017); ADR 018 replaced ForgeCode with Hermes Agent in the runtime role.
+- **Tier 1 Agent:** A read-only role launched with no mutating toolsets (repo/graph reads via narrowly-scoped read-only MCP). Literally lacks the capability to mutate files or run shell commands. Used for planning and exploratory review; the formal gate Reviewer is tool-less and script-mediated.
+- **Tier 2 Agent:** A script-executing role launched with `hermes -t terminal`. Lacks native file-mutation toolsets but can invoke verified bundled scripts.
 - **Extractor:** The deterministic tool (e.g., Marker, Docling) that converts Source Material to Extracted Text.
 - **Discoverer:** The LLM role that identifies and classifies topics from Extracted Text without summarizing them.
 - **Author:** The LLM role that synthesizes Topic Metadata into a Knowledge Draft.
@@ -29,8 +29,8 @@ This document defines the strict vocabulary for the Foundry project. Every promp
 - **Enricher:** The LLM role that acts as an instructional designer to generate analogies, diagrams, and flashcards from validated JSON.
 - **Curator:** The LLM role that groups Canonical Knowledge into MOCs.
 - **Renderer:** The deterministic templating engine that translates Canonical Knowledge into Rendered Views.
-- **Conductor:** The Tier 1 planning role (Foundry's analogue of ForgeCode's built-in `muse`, defined as a custom read-only agent). It analyzes Pipeline Ledger state and plans phase batches, but is structurally forbidden from executing node mutations — which is why it is intentionally absent from the ledger's `RoleName` actor enum.
-- **Operator:** The human overseer running the ForgeCode CLI. The only entity authorized to evaluate a `QUARANTINED` node and execute a `RELEASE` transition in the Pipeline Ledger.
+- **Conductor:** The Tier 1 planning role (a custom read-only Hermes session). It analyzes Pipeline Ledger state and plans phase batches, but is structurally forbidden from executing node mutations — which is why it is intentionally absent from the ledger's `RoleName` actor enum.
+- **Operator:** The human overseer running the Hermes CLI. The only entity authorized to evaluate a `QUARANTINED` node and execute a `RELEASE` transition in the Pipeline Ledger.
 
 ## Architecture & Orchestration Mechanisms
 
@@ -40,7 +40,7 @@ This document defines the strict vocabulary for the Foundry project. Every promp
 - **Sequential Chain-of-Thought (CoT):** Forcing the LLM to output its `axiological_reasoning` trace _before_ emitting the final boolean decision.
 - **Ghost Node:** A defensive database stub created when an edge targets an unextracted ID.
 - **Progressive Disclosure:** Loading schemas and instructions into the LLM's context window _only_ when a specific skill is triggered, preventing context collapse.
-- **State Isolation (`.skills-data/`):** The architectural rule that skills are immutable definitions (`.forge/skills/`), and all generated artifacts are written to a strictly separated runtime directory.
+- **State Isolation (`.skills-data/`):** The architectural rule that skills are immutable definitions (`skills/`), and all generated artifacts are written to a strictly separated runtime directory.
 - **Pipeline Ledger:** The deterministic, machine-readable record in `.skills-data/pipeline/` of every node's lifecycle state and transition history. It is the sole sequencing authority: bundled mutation scripts consult its preconditions before executing and refuse out-of-order phase transitions.
 - **Model Context Protocol (MCP):** A standardized client-server architecture used to grant Tier 1 agents read-only access to external graph/vector databases (e.g., Neo4j, Qdrant).
 - **Canonical ID:** The globally unique, snake_case identifier for a knowledge node (pattern `^[a-z][a-z0-9_]*$`, capped at 64 characters). It serves as the primary key in the Knowledge Graph, the target for relationship edges, and the deterministic anchor for the node's filesystem path.

@@ -2,6 +2,7 @@
 
 - **Date:** 2026-06-21
 - **Amended:** 2026-07-07 — aligned with verified ForgeCode mechanisms. Supersedes all references to `guardrails.deny_commands` and project-level `.forge.toml` hooks, which do not exist in ForgeCode.
+- **Amended:** 2026-07-17 — harness mechanism swapped from ForgeCode to Hermes Agent per ADR 018. The two-tier model and defense-in-depth layering stand; the mechanisms that implement them are re-expressed in the Amendment section below, which supersedes the ForgeCode mechanism references in the body.
 - **Status:** Accepted
 
 ## Context
@@ -31,3 +32,29 @@ Enforcement is layered (defense in depth):
 
 - **Positive:** Structurally prevents casual native JSON mutation by LLM roles and makes every state change an auditable script invocation.
 - **Negative:** Full guardrail strength depends on machine-level configuration that cannot be version-controlled; requires a bootstrap script and honest documentation rather than a claim of absolute prevention.
+
+## Amendment (2026-07-17, ADR 018 — Hermes harness)
+
+The tier model is unchanged; its Hermes implementation:
+
+- **Layer 1 (allowlists)** — was ForgeCode `tools:` frontmatter; now **session-launch
+  narrowing** `hermes -t <toolsets>` plus delegate inheritance-minus-blocked-set. Tier 2
+  = `-t terminal` (terminal+process; spike-verified: no `write_file`/`patch`). Tier 1 =
+  no mutating toolsets, reads via read-only MCP (ADR 014); the formal Reviewer stays
+  tool-less script-mediated. A per-call model-facing toolset parameter does not exist and
+  is not trusted (spike incident A: the model narrated a restriction it never applied —
+  `docs/hermes-migration-plan.md` §12).
+- **Layer 2 (machine policy)** — was restricted mode + `permissions.yaml`; now the
+  **Constitutional Bootstrap** (register #49): `approvals.mode: manual` (the shipped
+  `smart` default routes dangerous-command decisions to an aux LLM — forbidden by ADR 004
+  and this ADR; spike incident B), `approvals.deny` globs over `.skills-data/`, local
+  backend, no `--yolo`. Command-scoped only (no read/write/url operation types) — a
+  partial `permissions.yaml` analogue.
+- **Layer 3 (script validation)** — unchanged; still the only fully repo-controlled,
+  self-enforcing gate.
+
+Caveats retained and re-expressed: the shell escape hatch now reads "the `terminal`
+toolset can write via redirection" — reduced by layer-2 deny globs, not eliminated. MCP
+still bypasses approval policy (Hermes issue #16462) — Tier-1 read-only stays
+server-enforced (ADR 014). Open item: the exact minimal Tier-1 toolset is pinned in
+Phase 6, because the Hermes `file` toolset bundles read with write/patch.
