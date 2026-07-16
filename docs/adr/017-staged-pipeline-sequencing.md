@@ -33,3 +33,6 @@ invocation itself is verified: `hermes -z`, spike 2026-07-16). The ADR 016 "Open
 pointer now reads ADR 018. The sequencing authority (the ledger) and all preconditions are
 unchanged. **Hermes' Kanban dispatcher is NOT adopted as a driver** — any v2 driver issues
 transitions only through the ledger scripts (constitution; AGENTS.md rule 14).
+
+Path note: the body's `.forge/skills/` reference (Decision §1) predates ADR 013's
+2026-07-17 amendment and now reads as the harness-neutral `skills/`.

@@ -58,3 +58,6 @@ toolset can write via redirection" — reduced by layer-2 deny globs, not elimin
 still bypasses approval policy (Hermes issue #16462) — Tier-1 read-only stays
 server-enforced (ADR 014). Open item: the exact minimal Tier-1 toolset is pinned in
 Phase 6, because the Hermes `file` toolset bundles read with write/patch.
+
+Path note: the body's `.forge/skills/` references predate ADR 013's 2026-07-17 amendment
+and now read as the harness-neutral `skills/`.

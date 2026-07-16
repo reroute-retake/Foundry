@@ -2,8 +2,8 @@
 
 - **Date:** 2026-07-15
 - **Revised:** 2026-07-16 — §4, §5, §8, §9 updated with operator-machine spike results; §12 addendum records the evidence. Three mechanisms were corrected against reality; the plan's architecture and sequencing are unchanged.
-- **Status:** Proposal — pre-ADR planning document; spike verification (§12) passed, M1 unblocked pending Operator sign-off
-- **Scope discipline:** This document plans the migration; it does not execute it. Per the AGENTS.md ADR-Change Rule, ADR 016 remains the accepted harness decision until the superseding ADR (018, step M1 below) is authored and accepted. Nothing else in the repository changes with this commit.
+- **Status:** Executed — M0 plan (`0b0a0f5`), spike verification §12, M1 change set (`c828cd5`: ADR 018 accepted, amendments landed), `approvals.deny` live-verified (`5996937`), register #47 resolved (`4cab497`). Retained as the migration's historical record and evidence base.
+- **Scope discipline (historical):** This document planned the migration before executing it; per the AGENTS.md ADR-Change Rule, ADR 016 remained the accepted harness decision until ADR 018 landed in step M1.
 
 ## 1. Decision and scope
 

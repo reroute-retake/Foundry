@@ -6,7 +6,7 @@ Source Material through Gate 1 (`VALIDATED`), for one real markdown chapter.
 Neo4j/Qdrant/MCP, the headless driver, the extractor benchmark, the eval harness.
 
 Everything below builds against contracts that already exist and are CI-guarded:
-`schemas/` (6 modules, 100 tests), `docs/pipeline-ledger.md` (write protocol),
+`schemas/` (6 modules, 104 tests), `docs/pipeline-ledger.md` (write protocol),
 `AGENTS.md` (binding rules), `docs/decision-register.md` (50 ratified decisions).
 
 ## Kickoff Decisions (adopted for this plan — register #39, #40)
