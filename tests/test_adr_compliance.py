@@ -72,7 +72,7 @@ def test_no_llm_clients_in_extraction_code() -> None:
     Passes trivially until extraction code exists; guards it forever after.
     """
     candidate_files = []
-    for pattern in ("src/**/*extract*/**/*.py", "src/**/*extract*.py", "skills/*extract*/**/*.py"):
+    for pattern in ("src/**/*extract*/**/*.py", "src/**/*extract*.py", "skills/*extract*/**/*.py", "skills/**/*extract*.py"):
         candidate_files.extend(REPO_ROOT.glob(pattern))
 
     violations = []
